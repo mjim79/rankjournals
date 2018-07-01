@@ -1,16 +1,23 @@
-package com.f1000.exercise.rankjournals.service;
+package com.f1000.exercise.rankjournals.service.impl;
 
 import static org.junit.Assert.assertEquals;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.f1000.exercise.rankjournals.model.Journal;
 import com.f1000.exercise.rankjournals.model.JournalRank;
 import com.f1000.exercise.rankjournals.model.JournalScore;
+import com.f1000.exercise.rankjournals.service.RankJournalService;
 import com.f1000.exercise.rankjournals.service.impl.RankJournalServiceImpl;
 
 public class RankJournalServiceTest {
@@ -42,7 +49,13 @@ public class RankJournalServiceTest {
 			.build();
 	private static final JournalScore SCENARIO_3_JOURNAL_SCORE_C = JournalScore.builder().journal(JOURNAL_C).score(3.1)
 			.build();
+	private final DecimalFormat scoreFormat = new DecimalFormat("#.#");
 
+	@BeforeClass
+	public static void init() {
+		Locale.setDefault(Locale.UK);
+	}
+	
 	@Test
 	public void shouldGetJournalsOrdered() {
 
@@ -90,6 +103,41 @@ public class RankJournalServiceTest {
 		assertEquals(2, result.get(1).getRank());
 		assertEquals(SCENARIO_3_JOURNAL_SCORE_B, result.get(1).getJournalScore());
 
+	}
+	
+	@Test
+	public void shouldGetJornalsOrderedPerformance() {
+		
+		final List<JournalScore> journalScores = getJournalsPerformance();
+		
+		final List<JournalRank> result = this.rankJournalService.getJournalsRanking(journalScores);
+		
+		assertEquals(1, result.get(0).getRank());
+		assertEquals(result.size(), result.get(result.size()-1).getRank());
+	}
+	
+	private List<JournalScore> getJournalsPerformance() {
+		
+		final List<JournalScore> journalScores = new ArrayList<>();
+		journalScores.addAll(Arrays.asList(SCENARIO_1_JOURNAL_SCORE_A, SCENARIO_1_JOURNAL_SCORE_B, SCENARIO_1_JOURNAL_SCORE_C));
+		journalScores.addAll(Arrays.asList(SCENARIO_2_JOURNAL_SCORE_A, SCENARIO_2_JOURNAL_SCORE_B, SCENARIO_2_JOURNAL_SCORE_C));
+		journalScores.addAll(Arrays.asList(SCENARIO_3_JOURNAL_SCORE_A, SCENARIO_3_JOURNAL_SCORE_B, SCENARIO_3_JOURNAL_SCORE_C));
+		
+		IntStream.range(0, 1000000).forEach(i -> addRandomJournal(journalScores));
+		
+		return journalScores;
+	}
+	
+	private void addRandomJournal(List<JournalScore> journalScores) {
+		
+		final Journal journal = Journal.builder()
+					.name(Character.toString((char) (ThreadLocalRandom.current().nextInt(26) + 'A')))
+					.review(false)
+					.build(); 
+		journalScores.add(JournalScore.builder()
+					.journal(journal)
+					.score(Double.valueOf(this.scoreFormat.format(ThreadLocalRandom.current().nextDouble(0.0, 10.0))))
+					.build());
 	}
 
 }
